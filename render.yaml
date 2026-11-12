@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: tg-attendance
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: ENV
+        value: production
+      - key: TZ
+        value: Asia/Shanghai
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: TELEGRAM_TOKEN_SECRET
+        generateValue: true
+      - key: PGSSLROOTCERT
+        value: /etc/secrets/aiven-ca.pem
+      - key: DB_MAX_CONNECTIONS
+        value: "5"
+      # 当前数据库额度（字节）；0=未知，请按实际额度修改或在后台填写。
+      # 已在后台保存清理策略时，以后台值为准。
+      - key: DATABASE_QUOTA_BYTES
+        value: "0"
+      # Docker 工作目录 /app 所在文件系统；并非 Aiven 服务器磁盘。
+      - key: RESOURCE_DISK_PATH
+        value: /app
+      # 临时传输副本；不是有效备份的保存位置。
+      - key: TELEGRAM_RESET_EXPORT_DIR
+        value: /tmp/tg-attendance-exports
+      - key: GOMEMLIMIT
+        value: 256MiB
+      - key: GOGC
+        value: "70"

@@ -1,0 +1,57 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      ENV: production
+      PORT: "8080"
+      TZ: ${TZ:-Asia/Shanghai}
+      DATABASE_URL: ${DATABASE_URL:?Fill DATABASE_URL in .env}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Fill ADMIN_PASSWORD in .env}
+      TELEGRAM_TOKEN_SECRET: ${TELEGRAM_TOKEN_SECRET:?Fill TELEGRAM_TOKEN_SECRET in .env}
+      PUBLIC_BASE_URL: https://${APP_DOMAIN:?Fill APP_DOMAIN in .env}
+      PGSSLROOTCERT: /run/secrets/aiven_ca
+      DB_MAX_CONNECTIONS: ${DB_MAX_CONNECTIONS:-5}
+      # 额度以字节填写；后台保存策略后，以后台配置为准。
+      DATABASE_QUOTA_BYTES: ${DATABASE_QUOTA_BYTES:-0}
+      # 路径必须在 app 容器内可访问。
+      RESOURCE_DISK_PATH: ${RESOURCE_DISK_PATH:-.}
+      TELEGRAM_RESET_EXPORT_DIR: ${TELEGRAM_RESET_EXPORT_DIR:-}
+      GOMEMLIMIT: 256MiB
+      GOGC: "70"
+    secrets:
+      - aiven_ca
+    expose:
+      - "8080"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+  gateway:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Fill APP_DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+secrets:
+  aiven_ca:
+    file: ./aiven-ca.pem
+volumes:
+  caddy_data:
+  caddy_config:
